@@ -16,7 +16,7 @@ const API_BASE_URL = "http://localhost:5000/";
 interface Category {
     id: string;
     name: string;
-    product_lines?: ProductLine[];
+    product_lines: ProductLine[];
 }
 
 interface ProductLine {
@@ -47,7 +47,7 @@ export const CategoryManagement = ({ onDataChanged }: CategoryManagementProps) =
     const fetchCategories = async () => {
         try {
             setLoading(true);
-            const response = await axios.get(`${API_BASE_URL}categories`);
+            const response = await axios.get(`${API_BASE_URL}hierarchy`);
             setCategories(response.data);
         } catch (error: any) {
             console.error('Error fetching categories:', error);
@@ -255,7 +255,7 @@ export const CategoryManagement = ({ onDataChanged }: CategoryManagementProps) =
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant="outline">
-                                            - dòng sản phẩm
+                                            {category.product_lines?.length || 0} dòng sản phẩm
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
