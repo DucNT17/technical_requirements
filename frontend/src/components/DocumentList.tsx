@@ -5,8 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { FileText, Download, Trash2, Search, ChevronDown, ChevronRight, Folder, FolderOpen, Package } from "lucide-react";
+import { FileText, Download, Trash2, Search, ChevronDown, ChevronRight, Folder, FolderOpen, Package, Plus } from "lucide-react";
+import { DocumentUpload } from "./DocumentUpload";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 
@@ -35,13 +37,18 @@ interface Category {
   product_lines: ProductLine[];
 }
 
-export const DocumentList = () => {
+interface DocumentListProps {
+  onDataChanged?: () => void;
+}
+
+export const DocumentList = ({ onDataChanged }: DocumentListProps) => {
   const [hierarchy, setHierarchy] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [deletingFile, setDeletingFile] = useState<FileItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 
   // Expansion states
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
@@ -113,6 +120,7 @@ export const DocumentList = () => {
       });
 
       fetchHierarchy(); // Refresh hierarchy after delete
+      onDataChanged?.(); // Notify parent to refresh stats
       setDeletingFile(null);
     } catch (error: any) {
       console.error('Delete error:', error);
@@ -128,6 +136,12 @@ export const DocumentList = () => {
 
   const cancelDelete = () => {
     setDeletingFile(null);
+  };
+
+  const handleDocumentUploaded = () => {
+    fetchHierarchy(); // Refresh hierarchy after upload
+    onDataChanged?.(); // Notify parent to refresh stats
+    setUploadDialogOpen(false); // Close upload dialog
   };
 
   // Filter and count functions
@@ -185,6 +199,13 @@ export const DocumentList = () => {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold">Quản lý tài liệu</h2>
+          <p className="text-muted-foreground">Quản lý tài liệu các sản phẩm</p>
+        </div>
+      </div>
+
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1">
           <div className="relative">
@@ -210,6 +231,23 @@ export const DocumentList = () => {
             ))}
           </SelectContent>
         </Select>
+        <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Tải lên tài liệu
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Tải lên tài liệu mới</DialogTitle>
+              <DialogDescription>
+                Thêm tài liệu mới vào hệ thống quản lý tri thức
+              </DialogDescription>
+            </DialogHeader>
+            <DocumentUpload onDocumentUploaded={handleDocumentUploaded} />
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="text-sm text-muted-foreground">

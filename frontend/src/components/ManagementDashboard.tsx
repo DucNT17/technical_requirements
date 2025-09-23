@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Folder, FolderOpen, Package, Settings } from "lucide-react";
+import { Folder, FolderOpen, Package, Settings, FileText } from "lucide-react";
 import { CategoryManagement } from "./CategoryManagement";
 import { ProductLineManagement } from "./ProductLineManagement";
 import { ProductManagement } from "./ProductManagement";
+import { DocumentList } from "./DocumentList";
 import axios from "axios";
 
 const API_BASE_URL = "http://localhost:5000/";
@@ -14,7 +15,8 @@ export const ManagementDashboard = () => {
     const [stats, setStats] = useState({
         categories: 0,
         productLines: 0,
-        products: 0
+        products: 0,
+        documents: 0
     });
     const [loading, setLoading] = useState(true);
 
@@ -25,16 +27,24 @@ export const ManagementDashboard = () => {
     const fetchStats = async () => {
         try {
             setLoading(true);
-            const [categoriesRes, productLinesRes, productsRes] = await Promise.all([
+            const [categoriesRes, productLinesRes, productsRes, hierarchyRes] = await Promise.all([
                 axios.get(`${API_BASE_URL}categories`),
                 axios.get(`${API_BASE_URL}product-lines`),
-                axios.get(`${API_BASE_URL}products`)
+                axios.get(`${API_BASE_URL}products`),
+                axios.get(`${API_BASE_URL}hierarchy`)
             ]);
+
+            // Count total documents from hierarchy
+            const totalDocuments = hierarchyRes.data.reduce((total: number, category: any) =>
+                total + category.product_lines.reduce((plTotal: number, pl: any) =>
+                    plTotal + pl.products.reduce((pTotal: number, product: any) =>
+                        pTotal + product.files.length, 0), 0), 0);
 
             setStats({
                 categories: categoriesRes.data.length,
                 productLines: productLinesRes.data.length,
-                products: productsRes.data.length
+                products: productsRes.data.length,
+                documents: totalDocuments
             });
         } catch (error) {
             console.error('Error fetching stats:', error);
@@ -58,7 +68,7 @@ export const ManagementDashboard = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Danh mục</CardTitle>
@@ -97,10 +107,23 @@ export const ManagementDashboard = () => {
                         </p>
                     </CardContent>
                 </Card>
+
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Tài liệu</CardTitle>
+                        <FileText className="h-4 w-4 text-purple-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{loading ? "-" : stats.documents}</div>
+                        <p className="text-xs text-muted-foreground">
+                            Tổng số tài liệu
+                        </p>
+                    </CardContent>
+                </Card>
             </div>
 
             <Tabs defaultValue="categories" className="space-y-4">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="categories" className="flex items-center gap-2">
                         <Folder className="h-4 w-4" />
                         Danh mục
@@ -112,6 +135,10 @@ export const ManagementDashboard = () => {
                     <TabsTrigger value="products" className="flex items-center gap-2">
                         <Package className="h-4 w-4" />
                         Sản phẩm
+                    </TabsTrigger>
+                    <TabsTrigger value="documents" className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Tài liệu
                     </TabsTrigger>
                 </TabsList>
 
@@ -125,6 +152,10 @@ export const ManagementDashboard = () => {
 
                 <TabsContent value="products" className="space-y-4">
                     <ProductManagement onDataChanged={fetchStats} />
+                </TabsContent>
+
+                <TabsContent value="documents" className="space-y-4">
+                    <DocumentList onDataChanged={fetchStats} />
                 </TabsContent>
             </Tabs>
 
@@ -168,11 +199,21 @@ export const ManagementDashboard = () => {
                         </div>
 
                         <div className="flex items-start gap-3">
-                            <div className="bg-gray-100 text-gray-600 rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium">4</div>
+                            <div className="bg-purple-100 text-purple-600 rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium">4</div>
                             <div>
                                 <h4 className="font-medium">Upload Tài liệu</h4>
                                 <p className="text-sm text-muted-foreground">
                                     Sử dụng trang Upload để thêm tài liệu vào các sản phẩm đã tạo
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-start gap-3">
+                            <div className="bg-gray-100 text-gray-600 rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium">5</div>
+                            <div>
+                                <h4 className="font-medium">Quản lý Tài liệu</h4>
+                                <p className="text-sm text-muted-foreground">
+                                    Xem, tìm kiếm và quản lý tất cả tài liệu đã tải lên theo cấu trúc phân cấp
                                 </p>
                             </div>
                         </div>

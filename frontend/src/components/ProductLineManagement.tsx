@@ -28,11 +28,11 @@ interface ProductLine {
     id: string;
     name: string;
     category_id: string;
-    products?: Product[];
+    products: Product[];
 }
 
 interface ProductLineWithCategory extends ProductLine {
-    category?: Category;
+    category: Category;
 }
 
 interface ProductLineManagementProps {
@@ -58,10 +58,7 @@ export const ProductLineManagement = ({ onDataChanged }: ProductLineManagementPr
     const fetchInitialData = async () => {
         try {
             setLoading(true);
-            await Promise.all([
-                fetchProductLines(),
-                fetchCategories()
-            ]);
+            await fetchHierarchyData();
         } catch (error) {
             console.error('Error fetching initial data:', error);
         } finally {
@@ -69,37 +66,48 @@ export const ProductLineManagement = ({ onDataChanged }: ProductLineManagementPr
         }
     };
 
-    const fetchProductLines = async () => {
+    const fetchHierarchyData = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}product-lines`);
-            setProductLines(response.data);
+            const response = await axios.get(`${API_BASE_URL}hierarchy`);
+            const hierarchyData = response.data;
+
+            // Extract categories from hierarchy
+            const categoriesData: Category[] = hierarchyData.map((category: any) => ({
+                id: category.id,
+                name: category.name
+            }));
+            setCategories(categoriesData);
+
+            // Extract product lines with full info from hierarchy
+            const productLinesData: ProductLineWithCategory[] = [];
+            hierarchyData.forEach((category: any) => {
+                category.product_lines.forEach((productLine: any) => {
+                    productLinesData.push({
+                        id: productLine.id,
+                        name: productLine.name,
+                        category_id: category.id,
+                        products: productLine.products || [],
+                        category: {
+                            id: category.id,
+                            name: category.name
+                        }
+                    });
+                });
+            });
+            setProductLines(productLinesData);
+
         } catch (error: any) {
-            console.error('Error fetching product lines:', error);
+            console.error('Error fetching hierarchy data:', error);
             toast({
                 title: "Lỗi",
-                description: "Không thể tải danh sách dòng sản phẩm",
+                description: "Không thể tải dữ liệu hệ thống",
                 variant: "destructive"
             });
         }
     };
 
-    const fetchCategories = async () => {
-        try {
-            const response = await axios.get(`${API_BASE_URL}categories`);
-            setCategories(response.data);
-        } catch (error: any) {
-            console.error('Error fetching categories:', error);
-            toast({
-                title: "Lỗi",
-                description: "Không thể tải danh sách danh mục",
-                variant: "destructive"
-            });
-        }
-    };
-
-    const getCategoryName = (categoryId: string) => {
-        const category = categories.find(c => c.id === categoryId);
-        return category?.name || "Không xác định";
+    const getCategoryName = (productLine: ProductLineWithCategory) => {
+        return productLine.category?.name || "Không xác định";
     };
 
     const handleCreate = async () => {
@@ -127,7 +135,7 @@ export const ProductLineManagement = ({ onDataChanged }: ProductLineManagementPr
 
             setFormData({ name: "", category_id: "" });
             setIsCreateDialogOpen(false);
-            fetchProductLines();
+            fetchHierarchyData();
             onDataChanged?.();
         } catch (error: any) {
             console.error('Create error:', error);
@@ -166,7 +174,7 @@ export const ProductLineManagement = ({ onDataChanged }: ProductLineManagementPr
             setFormData({ name: "", category_id: "" });
             setIsEditDialogOpen(false);
             setEditingProductLine(null);
-            fetchProductLines();
+            fetchHierarchyData();
             onDataChanged?.();
         } catch (error: any) {
             console.error('Update error:', error);
@@ -193,7 +201,7 @@ export const ProductLineManagement = ({ onDataChanged }: ProductLineManagementPr
             });
 
             setDeletingProductLine(null);
-            fetchProductLines();
+            fetchHierarchyData();
             onDataChanged?.();
         } catch (error: any) {
             console.error('Delete error:', error);
@@ -313,12 +321,12 @@ export const ProductLineManagement = ({ onDataChanged }: ProductLineManagementPr
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant="secondary">
-                                            {getCategoryName(productLine.category_id)}
+                                            {getCategoryName(productLine)}
                                         </Badge>
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant="outline">
-                                            - sản phẩm
+                                            {productLine.products?.length || 0} sản phẩm
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
@@ -384,7 +392,7 @@ export const ProductLineManagement = ({ onDataChanged }: ProductLineManagementPr
                             <Label>Danh mục hiện tại</Label>
                             <div className="p-2 bg-muted rounded-md">
                                 <Badge variant="secondary">
-                                    {getCategoryName(editingProductLine?.category_id || "")}
+                                    {editingProductLine?.category?.name || "Không xác định"}
                                 </Badge>
                             </div>
                             <p className="text-xs text-muted-foreground mt-1">
