@@ -198,6 +198,3 @@ Technical_requirement/
 
 Mọi đóng góp đều được chào đón! Vui lòng tạo issue hoặc pull request.
 
-## 📄 License
-
-[Thêm thông tin license nếu có]
