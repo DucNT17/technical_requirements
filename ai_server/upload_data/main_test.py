@@ -1,26 +1,33 @@
 import json
-from ai_server.upload_data.step_5_upload_data2db import upload_data2db_from_folder
+from ai_server.upload_data.step_5_upload_data2db import upload_data2db
 import os
 # Mở và đọc file JSON
 # with open('D:\\study\\LammaIndex\\downloads1\\dc-power-systems.json', 'r', encoding='utf-8') as f:
 #     data = json.load(f)
 
-description = "Liebert PEX efficiently reduces operating costs with enhanced capacity fit into compact footprint. Combining the best accessories such as inverter compressor, EC fan, EEV & microchannel coil, Liebert PEX4 with superior technology allows modern data centers to enjoy abundant load variations with premium efficiency."
-features_benefits = """Key Features Premium efficiency with intelligent controller, optimized algorithms, and touchscreen interface for synchronized multi-unit operation.
-zInverter compressor with variable speed BPM motor (1000–7200 RPM), wide operating range, EMF filter, eco-friendly R410A refrigerant, and EEV, achieving part-load COP > 5.5.
-High-efficiency EC fan with backward-curved blades, variable speed control, and in-floor downflow option for up to 30% energy savings.
-Compact microchannel coil with 40% smaller size, 40% higher heat transfer, 50% less refrigerant usage, and low air-side pressure drop.
-Electronic expansion valve for precise variable capacity control, stable superheat, and enhanced dehumidification.
+import uuid
+def upload_data2db_from_folder(folder_path, collection_name=None):
+    """
+    Duyệt folder_path, tìm các file .pdf và gọi upload_data2db cho từng file.
+    Nếu collection_name không truyền thì dùng tên thư mục làm collection_name (spaces -> _).
+    product_id và filename_id tự tạo bằng uuid4.
+    """
+    collection_name = "HuyenThyNguyen"
 
-Benefits
-Lower operating costs through high energy efficiency and optimized part-load performance.
-High reliability under all conditions with intelligent control.
-Significant energy savings from EC fan and inverter technology.
-Environmentally friendly with reduced refrigerant volume and R410A use.
-Space-saving compact, lightweight design.
-Flexible cooling performance with precise temperature and humidity control.."""
-folder_path = "/Users/nguyensiry/Downloads/Đieu_hoa/Tài liệu kỹ thuật VTC"
-markdown_path = f"output/Vertiv Liebert PEX4 Brochure.md"
-file_brochure_name = "Vertiv Liebert PEX4 Brochure"
+    for root, dirs, files in os.walk(folder_path):
+        for file in files:
+            if file.lower().endswith(".pdf"):
+                full_path = os.path.join(root, file)
+                product_id = uuid.uuid4().hex
+                filename_id = uuid.uuid4().hex
+                print(f"Uploading: {full_path} -> collection: {collection_name}, product_id: {product_id}, filename_id: {filename_id}")
+                try:
+                    upload_data2db(pdf_path=full_path, collection_name=collection_name, product_id=product_id, filename_id=filename_id)
+                except Exception as e:
+                    print(f"Failed to upload {full_path}: {e}")
 
-upload_data2db_from_folder(folder_path, collection_name="hello_my_friend", category="Thermal Management", product_line="Room Cooling", product_name="P1060", description=description, features_benefits=features_benefits, brochure_file_path=markdown_path, file_brochure_name=file_brochure_name)  
+# ...existing code...
+if __name__ == "__main__":
+    # Thư mục PDF bạn cung cấp
+    folder = r"D:\\project\\technical_requirements\\downloads\\DC Power Systems\\Netsure 731 A41"
+    upload_data2db_from_folder(folder)

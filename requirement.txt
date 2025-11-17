@@ -15,3 +15,4 @@ flask
 flasgger
 flask_cors
 camelot-py==1.0.0
+minio

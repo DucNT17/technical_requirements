@@ -1,5 +1,8 @@
 from ai_server.upload_data.step_1_config_parser import config_parser
 import re
+from ai_server.config_minio import client
+import io
+import os
 
 PAGE_MARKER_TEMPLATE = "[[__PAGE_{page}__]]"
 PAGE_MARKER_RE = re.compile(r"\[\[__PAGE_(\d+)__\]\]")
@@ -48,7 +51,7 @@ def merge_markdown_content(parsed_docs):
 
             print("Product name:", product_name)
 
-        parts.append(d.text)
+        parts.append(strip_page_markers(d.text))
         parts.append(f"\n{PAGE_MARKER_TEMPLATE.format(page=i)}\n")
 
     merged_text = "".join(parts)
@@ -56,6 +59,33 @@ def merge_markdown_content(parsed_docs):
     return merged_text, product_name
 
 def process_data_md(pdf_path):
+    parts = pdf_path.split("/")  
+    product_name_file, folder, filename = parts[0], parts[1], parts[2]
+
+    bucket_name = "documents"
+
     parsed_docs, file_name = config_parser(pdf_path)
     merged_text, product_name = merge_markdown_content(parsed_docs)
+
+    base_name = os.path.splitext(file_name)[0]   # bỏ đuôi .pdf
+    md_file_name = f"{base_name}.md"
+
+    # Tạo object_name mới cho file Markdown
+    md_object_name = f"{product_name_file}/md/{md_file_name}"
+
+    # Upload trực tiếp merged_text vào MinIO
+    client.put_object(
+        bucket_name,
+        md_object_name,
+        io.BytesIO(merged_text.encode("utf-8")),
+        length=len(merged_text.encode("utf-8")),
+        content_type="text/markdown"
+    )
     return merged_text, product_name, file_name
+
+
+def strip_page_markers(text: str) -> str:
+    """Xoá marker trang khỏi text để không ảnh hưởng embedding."""
+    cleaned = re.sub(r"```", "", text)
+    cleaned = re.sub("markdown", "", cleaned)
+    return cleaned.strip("\n\r ")
