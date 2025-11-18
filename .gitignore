@@ -11,3 +11,4 @@ downloads1/
 test_docs/
 output10/
 test_data/
+.env.local/

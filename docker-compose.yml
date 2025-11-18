@@ -3,14 +3,18 @@ services:
     build:
       context: .
       dockerfile: dockerfile.backend
+    container_name: backend_api
     ports:
       - "5000:5000"
     environment:
       - LLAMA_API_KEY=${LLAMA_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - QDRANT_API_KEY=${QDRANT_API_KEY}
-      - QDRANT_URL=${QDRANT_URL}
-      - DB_POSTGRES_URL=${DB_POSTGRES_URL}
+      - QDRANT_API_KEY=
+      - QDRANT_URL=http://qdrant:6333
+      - DB_POSTGRES_URL=postgresql://postgres:postgres123@postgres:5432/technical_requirements
+      - MINIO_URL=${MINIO_URL}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
     volumes:
       - ./output:/app/output
       - ./output10:/app/output10
@@ -26,6 +30,7 @@ services:
     build:
       context: .
       dockerfile: dockerfile.frontend
+    container_name: frontend_app
     ports:
       - "8080:8080"
     environment:
@@ -38,7 +43,5 @@ services:
 
 networks:
   app-network:
-    driver: bridge
-
-volumes:
-  app-data:
+    name: technical_requirements_app-network
+    external: true

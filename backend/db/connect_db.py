@@ -2,7 +2,7 @@
 from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
 import os
-load_dotenv()
+load_dotenv(".env.local")
 
 DB_POSTGRES_URL = os.getenv("DB_POSTGRES_URL")
 
